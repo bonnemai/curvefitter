@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import datetime, timezone
-from typing import AsyncIterator, Dict, List
+from typing import AsyncIterator
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
@@ -53,7 +53,7 @@ def _sample_raw_rates(tenors: np.ndarray) -> np.ndarray:
 
 def _fit_curve(
     tenors: np.ndarray, rates: np.ndarray, grid: np.ndarray, degree: int = 4
-) -> Dict[str, List[float]]:
+) -> dict[str, list[float]]:
     """Fit a polynomial to the raw rates and evaluate on the target grid."""
     rate_variance = float(np.var(rates))
     if rate_variance == 0:
@@ -68,7 +68,7 @@ def _fit_curve(
     }
 
 
-def _build_curve_snapshot() -> Dict[str, object]:
+def _build_curve_snapshot() -> dict[str, object]:
     """Create a JSON-serialisable snapshot containing raw and fitted curves."""
     raw_rates = _sample_raw_rates(TENOR_YEARS)
     fitted = _fit_curve(TENOR_YEARS, raw_rates, FITTED_GRID)
@@ -99,13 +99,13 @@ async def stream_swap_curves(interval: float = 1.0) -> StreamingResponse:
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, str]:
+async def health_check() -> dict[str, str]:
     """Simple readiness probe."""
     return {"status": "ok"}
 
 
 @app.get("/")
-async def root() -> Dict[str, object]:
+async def root() -> dict[str, object]:
     """Return service metadata and helpful links."""
     return {
         "service": app.title,
