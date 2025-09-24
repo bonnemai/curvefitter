@@ -43,3 +43,7 @@ Sample event payload:
 ```
 
 Adjust the stream interval or integrate the endpoint into a frontend to visualise the evolving curve.
+
+## Continuous delivery
+
+A GitHub Actions workflow at `.github/workflows/docker-publish.yml` builds the Docker image with Buildx and publishes it to GitHub Container Registry (`ghcr.io/<owner>/<repo>`) whenever `main` is updated. Grant the repository's `GITHUB_TOKEN` the `packages: write` permission (enabled by default on public repos) to allow the push to succeed.
