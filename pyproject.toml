@@ -1,0 +1,25 @@
+[project]
+name = "curve-fitter"
+version = "0.1.0"
+description = "FastAPI service streaming synthetic emerging market swap curves via SSE"
+readme = "README.md"
+authors = [{ name = "Olivier Bonnemaison" }]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.29.0",
+    "numpy>=1.26.0",
+]
+
+[project.scripts]
+curve-fitter = "app.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
