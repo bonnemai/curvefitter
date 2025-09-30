@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import threading
 from datetime import datetime, timezone
 from typing import AsyncIterator
 
@@ -19,10 +21,10 @@ app = FastAPI(
     ),
     version="0.1.0",
 )
-
+allow_origins = os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allow_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,6 +34,14 @@ app.add_middleware(
 TENOR_YEARS = np.array([0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30], dtype=float)
 # Dense grid for reporting the fitted curve back to the client.
 FITTED_GRID = np.linspace(0.5, 30.0, num=120)
+MIN_CURVE_RATE = 1.5
+MAX_MUTATED_POINTS = 2
+MAX_MUTATION_FRACTION = 0.20
+
+_mutation_rng = np.random.default_rng()
+_curve_state_lock = threading.Lock()
+_base_curve: np.ndarray | None = None
+_current_raw_rates: np.ndarray | None = None
 
 
 def _base_em_curve(tenors: np.ndarray) -> np.ndarray:
@@ -44,11 +54,35 @@ def _base_em_curve(tenors: np.ndarray) -> np.ndarray:
 
 
 def _sample_raw_rates(tenors: np.ndarray) -> np.ndarray:
-    """Perturb the base curve with noise to emulate daily marks."""
-    base_curve = _base_em_curve(tenors)
-    shock_scale = np.linspace(0.15, 0.6, num=tenors.size)
-    shocks = np.random.normal(loc=0.0, scale=shock_scale)
-    return np.maximum(base_curve + shocks, 1.5)
+    """Mutate up to two points of the curve, capping changes at 20%."""
+    global _base_curve, _current_raw_rates
+
+    with _curve_state_lock:
+        if _base_curve is None or _current_raw_rates is None:
+            _base_curve = _base_em_curve(tenors)
+            _current_raw_rates = _base_curve.copy()
+
+        mutation_count = int(
+            _mutation_rng.integers(1, MAX_MUTATED_POINTS + 1)
+        )
+        indices = _mutation_rng.choice(
+            tenors.size, size=mutation_count, replace=False
+        )
+
+        for idx in np.atleast_1d(indices):
+            base_rate = float(_base_curve[idx])
+            current_rate = float(_current_raw_rates[idx])
+            delta = float(
+                _mutation_rng.uniform(-MAX_MUTATION_FRACTION, MAX_MUTATION_FRACTION)
+            )
+            proposed = current_rate * (1.0 + delta)
+            lower_bound = max(base_rate * (1.0 - MAX_MUTATION_FRACTION), MIN_CURVE_RATE)
+            upper_bound = base_rate * (1.0 + MAX_MUTATION_FRACTION)
+            _current_raw_rates[idx] = float(
+                np.clip(proposed, lower_bound, upper_bound)
+            )
+
+        return _current_raw_rates.copy()
 
 
 def _fit_curve(
