@@ -4,13 +4,21 @@ FROM python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+RUN groupadd --system appuser \
+    && useradd --system --gid appuser --create-home --home-dir /home/app appuser
+
+RUN mkdir -p /app \
+    && chown appuser:appuser /app
+
 WORKDIR /app
 
-COPY pyproject.toml README.md ./
-COPY app ./app
+COPY --chown=appuser:appuser pyproject.toml README.md ./
+COPY --chown=appuser:appuser app ./app
 
 RUN pip install --no-cache-dir --upgrade pip uv \
     && uv pip install --system --no-cache .
+
+USER appuser
 
 EXPOSE 8000
 

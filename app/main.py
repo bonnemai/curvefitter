@@ -6,12 +6,16 @@ import json
 import os
 import threading
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import AsyncIterator
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
+
+_TEMPLATE_ROOT = Path(__file__).resolve().parent / "templates"
+_INDEX_TEMPLATE = (_TEMPLATE_ROOT / "index.html").read_text(encoding="utf-8")
 
 app = FastAPI(
     title="Emerging Market Swap Curve Fitter",
@@ -138,13 +142,8 @@ async def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/")
-async def root() -> dict[str, object]:
-    """Return service metadata and helpful links."""
-    return {
-        "service": app.title,
-        "description": app.description,
-        "streamEndpoint": "/curves/stream",
-        "healthEndpoint": "/health",
-        "defaultIntervalSeconds": 1.0,
-    }
+@app.get("/", response_class=HTMLResponse)
+async def root() -> HTMLResponse:
+    """Render the landing page from a static HTML template."""
+    html = _INDEX_TEMPLATE.replace("{{version}}", app.version)
+    return HTMLResponse(content=html)

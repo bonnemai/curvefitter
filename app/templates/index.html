@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Emerging Market Swap Curve Fitter</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 2.5rem 1rem 3rem;
+        background: #0f172a;
+        color: #e2e8f0;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        background: rgba(15, 23, 42, 0.75);
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        box-shadow: 0 24px 72px rgba(15, 23, 42, 0.55);
+      }
+      h1 {
+        font-size: 2.25rem;
+        margin-bottom: 0.25rem;
+      }
+      h2 {
+        font-size: 1.5rem;
+        margin-top: 2rem;
+      }
+      p {
+        margin: 0.75rem 0;
+      }
+      a {
+        color: #38b6ff;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+      }
+      li {
+        margin: 0.75rem 0;
+        padding: 1rem;
+        background: rgba(30, 41, 59, 0.75);
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+      }
+      code {
+        background: rgba(15, 23, 42, 0.85);
+        padding: 0.15rem 0.4rem;
+        border-radius: 6px;
+        font-size: 0.95rem;
+      }
+      footer {
+        margin-top: 2.5rem;
+        font-size: 0.9rem;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Emerging Market Swap Curve Fitter</h1>
+      <p>Curated and crafted by <strong>Olivier Bonnemaison</strong>.</p>
+      <p>
+        Explore the source code on
+        <a href="https://github.com/bonnemai/curvefitter" target="_blank" rel="noreferrer">
+          GitHub
+        </a>.
+      </p>
+      <h2>API Endpoints</h2>
+      <ul>
+        <li>
+          <strong>Real-time curves:</strong>
+          <code>/curves/stream</code>
+          &mdash; Streams synthetic emerging market swap curves and polynomial fits via Server-Sent Events.
+        </li>
+        <li>
+          <strong>Health check:</strong>
+          <code>/health</code>
+          &mdash; Lightweight readiness probe indicating service availability.
+        </li>
+      </ul>
+      <p>
+        Use the stream endpoint with an event source client to receive continuous updates.
+        The response includes the current raw curve, the fitted polynomial, and metadata with timestamps.
+      </p>
+      <footer>
+        Version {{version}} &bull; Default stream interval 1.0s.
+      </footer>
+    </main>
+  </body>
+</html>
