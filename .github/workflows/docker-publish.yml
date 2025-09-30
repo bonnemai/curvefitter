@@ -22,7 +22,7 @@ jobs:
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN }}
       AWS_REGION: ${{ secrets.AWS_REGION || vars.AWS_REGION }}
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY || secrets.ECR_REPOSITORY }}
-      ECR_REGISTRY: ${{ vars.ECR_REGISTRY || format('{0}.dkr.ecr.{1}.amazonaws.com', secrets.AWS_ACCOUNT_ID || vars.AWS_ACCOUNT_ID, secrets.AWS_REGION || vars.AWS_REGION) }}
+      ECR_REGISTRY: ${{ vars.ECR_REGISTRY || secrets.ECR_REGISTRY || format('{0}.dkr.ecr.{1}.amazonaws.com', secrets.AWS_ACCOUNT_ID || vars.AWS_ACCOUNT_ID, secrets.AWS_REGION || vars.AWS_REGION) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -47,12 +47,46 @@ jobs:
             exit 1
           fi
 
+          repo="$ECR_REPOSITORY"
+          repo=${repo#https://}
+          repo=${repo#http://}
+          if [[ "$repo" == *".amazonaws.com/"* ]]; then
+            registry_part="${repo%%/*}"
+            repo="${repo#*/}"
+            echo "Detected full ECR image value; using registry '$registry_part' and repository '$repo'."
+            ECR_REGISTRY="$registry_part"
+            echo "ECR_REGISTRY=$ECR_REGISTRY" >> "$GITHUB_ENV"
+          fi
+
+          if [ -z "$repo" ]; then
+            echo "::error::Resolved ECR repository name is empty."
+            exit 1
+          fi
+
+          if [ -z "$ECR_REGISTRY" ]; then
+            ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+          fi
+
+          if [ -z "$ECR_REGISTRY" ]; then
+            echo "::error::ECR registry could not be determined. Set ECR_REGISTRY explicitly."
+            exit 1
+          fi
+
+          echo "ECR_REGISTRY=$ECR_REGISTRY" >> "$GITHUB_ENV"
+          echo "SANITIZED_ECR_REPOSITORY=$repo" >> "$GITHUB_ENV"
+          echo "ECR_IMAGE=$ECR_REGISTRY/$repo" >> "$GITHUB_ENV"
+
       - name: Configure AWS credentials (OIDC)
         if: env.AWS_ROLE_ARN != ''
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Ensure ECR repository exists
+        run: |
+          aws ecr describe-repositories --repository-names "$SANITIZED_ECR_REPOSITORY" >/dev/null 2>&1 || \
+            aws ecr create-repository --repository-name "$SANITIZED_ECR_REPOSITORY" >/dev/null
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -70,7 +104,7 @@ jobs:
         with:
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
+            ${{ env.ECR_IMAGE }}
           tags: |
             type=ref,event=branch
             type=ref,event=tag
