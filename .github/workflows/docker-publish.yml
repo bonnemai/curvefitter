@@ -10,43 +10,6 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  sonar-analysis:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    environment: prd
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install ".[dev]"
-
-      - name: Run tests with coverage
-        run: |
-          coverage run -m pytest
-          coverage xml
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v2
-        environment: prd
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
-
   build-and-push:
     runs-on: ubuntu-latest
     environment: prd
@@ -54,7 +17,6 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    needs: sonar-analysis
     env:
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID || vars.AWS_ACCOUNT_ID }}
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN || vars.AWS_ROLE_ARN }}
@@ -160,3 +122,23 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
           sbom: false
+  sonarqube:
+    name: SonarQube
+    environment: prd
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - name: Build tests image
+        run: docker build --target tests -t curve-fitter-tests .
+      - name: Export coverage report from tests image
+        run: |
+          container_id=$(docker create curve-fitter-tests)
+          docker cp "$container_id":/app/coverage.xml coverage.xml
+          docker rm "$container_id"
+          test -f coverage.xml
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

@@ -13,7 +13,8 @@ COPY app ./app
 COPY tests ./tests
 
 RUN uv pip install --system --no-cache ".[dev]"
-RUN pytest
+RUN coverage run -m pytest \
+    && coverage xml
 
 FROM python:3.13-slim
 
