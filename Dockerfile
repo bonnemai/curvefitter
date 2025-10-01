@@ -1,42 +1,32 @@
 # syntax=docker/dockerfile:1
-FROM python:3.13-slim AS tests
+FROM --platform=linux/arm64 public.ecr.aws/lambda/python:3.11 AS tests
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-WORKDIR /app
+WORKDIR /var/task
 
-RUN pip install --no-cache-dir --upgrade pip uv
+RUN python -m pip install --no-cache-dir --upgrade pip
 
 COPY pyproject.toml README.md ./
 COPY app ./app
 COPY tests ./tests
 
-RUN uv pip install --system --no-cache ".[dev]"
+RUN python -m pip install --no-cache-dir ".[dev]"
 RUN coverage run -m pytest \
     && coverage xml
 
-FROM python:3.13-slim
+FROM --platform=linux/arm64 public.ecr.aws/lambda/python:3.11
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-RUN groupadd --system appuser \
-    && useradd --system --gid appuser --create-home --home-dir /home/app appuser
+WORKDIR /var/task
 
-RUN mkdir -p /app \
-    && chown appuser:appuser /app
+COPY pyproject.toml README.md ./
+COPY app ./app
 
-WORKDIR /app
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir .
 
-COPY --chown=appuser:appuser pyproject.toml README.md ./
-COPY --chown=appuser:appuser app ./app
-
-RUN pip install --no-cache-dir --upgrade pip uv \
-    && uv pip install --system --no-cache .
-
-USER appuser
-
-EXPOSE 8080
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["app.main.handler"]

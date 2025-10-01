@@ -13,6 +13,7 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
+from mangum import Mangum
 
 _TEMPLATE_ROOT = Path(__file__).resolve().parent / "templates"
 _INDEX_TEMPLATE = (_TEMPLATE_ROOT / "index.html").read_text(encoding="utf-8")
@@ -33,6 +34,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+handler = Mangum(app)
 
 # Tenors that roughly align with LCH cleared BRL swap grid, expressed in years.
 TENOR_YEARS = np.array([0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30], dtype=float)
