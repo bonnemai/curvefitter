@@ -5,3 +5,7 @@ __pycache__/
 *.pyd
 .Python
 db.sqlite3
+.pytest_cache/
+.coverage
+coverage.xml
+.env
