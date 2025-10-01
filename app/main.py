@@ -42,7 +42,12 @@ MIN_CURVE_RATE = 1.5
 MAX_MUTATED_POINTS = 2
 MAX_MUTATION_FRACTION = 0.20
 
-_mutation_rng = np.random.default_rng()
+try:
+    _MUTATION_SEED = int(os.getenv("CURVE_FITTER_MUTATION_SEED", "275352"))
+except ValueError:
+    _MUTATION_SEED = 275352
+
+_mutation_rng = np.random.default_rng(_MUTATION_SEED)
 _curve_state_lock = threading.Lock()
 _base_curve: np.ndarray | None = None
 _current_raw_rates: np.ndarray | None = None

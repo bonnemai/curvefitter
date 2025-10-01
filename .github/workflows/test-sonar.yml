@@ -9,6 +9,7 @@ on:
 jobs:
   test-and-analyze:
     runs-on: ubuntu-latest
+    environment: prd
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
