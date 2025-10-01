@@ -11,7 +11,7 @@ pip install -r requirements.txt
 python -m app
 ```
 
-The app listens on port 8000 by default. You can also run it with `uvicorn app.main:app --reload` during development.
+The app listens on port 8080 by default. You can also run it with `uvicorn app.main:app --reload` during development.
 
 ## Endpoints
 
@@ -24,7 +24,7 @@ The app listens on port 8000 by default. You can also run it with `uvicorn app.m
 Event data is JSON encoded. A quick way to try the feed is to use `curl`:
 
 ```bash
-curl -N "http://127.0.0.1:8000/curves/stream?interval=2"
+curl -N "http://127.0.0.1:8080/curves/stream?interval=2"
 ```
 
 Sample event payload:

@@ -1,2 +1,2 @@
 docker build -t curve-fitter .
-docker run -p 8000:8000 curve-fitter
+docker run -p 8080:8080 curve-fitter
