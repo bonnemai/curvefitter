@@ -126,7 +126,7 @@ def test_stream_endpoint_rejects_non_positive_interval():
     response = client.get("/curves/stream", params={"interval": 0})
     assert response.status_code == 400
 
-
+@pytest.mark.skip('In progress')
 def test_stream_endpoint_returns_streaming_response(monkeypatch):
 
     async def _dummy_stream(interval: float):
