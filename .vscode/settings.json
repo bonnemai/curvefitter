@@ -1,0 +1,6 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "bonnemai",
+        "projectKey": "bonnemai_curvefitter"
+    }
+}
