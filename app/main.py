@@ -133,14 +133,15 @@ async def sse_gen(interval: float) -> AsyncIterator[str]:
         await asyncio.sleep(interval)
 
 
+@app.get("/baskets/stream")
 @app.get("/curves/stream")
 async def stream_swap_curves(interval: float = 1.0) -> StreamingResponse:
     """Stream synthetic emerging market swap curves via SSE."""
     if interval <= 0:
         raise HTTPException(status_code=400, detail="interval must be positive")
     headers = {
-        "Cache-Control": "no-cache",
         "Connection": "keep-alive",
+        "Cache-Control": "no-cache, no-transform",
     }
     return StreamingResponse(
         sse_gen(interval),
