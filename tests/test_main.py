@@ -111,10 +111,10 @@ def test_build_curve_snapshot_includes_expected_shapes():
 
 
 @pytest.mark.asyncio
-async def test_curve_event_stream_yields_json(monkeypatch):
+async def test_sse_gen_yields_json(monkeypatch):
     payload = {"message": "hello"}
     monkeypatch.setattr(main, "_build_curve_snapshot", lambda: payload)
-    stream = main._curve_event_stream(interval=0)
+    stream = main.sse_gen(interval=0)
     data = await asyncio.wait_for(anext(stream), timeout=1)
     assert data.startswith("data: ")
     event = json.loads(data.removeprefix("data: ").strip())
@@ -123,8 +123,24 @@ async def test_curve_event_stream_yields_json(monkeypatch):
 
 def test_stream_endpoint_rejects_non_positive_interval():
     client = TestClient(main.app)
-    response = client.get("/curves/stream", params={"interval": 0})
+    response = client.get("/baskets/stream", params={"interval": 0})
     assert response.status_code == 400
+
+
+def test_stream_endpoint_sets_sse_headers(monkeypatch):
+
+    async def _dummy_stream(interval: float):
+        yield "data: dummy\\n\\n"
+
+    monkeypatch.setattr(main, "sse_gen", _dummy_stream)
+    client = TestClient(main.app)
+
+    with client.stream("GET", "/baskets/stream") as response:
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "no-cache"
+        assert response.headers["connection"] == "keep-alive"
+        iterator = response.iter_text()
+        assert next(iterator) == "data: dummy\n\n"
 
 @pytest.mark.skip('In progress. ')
 def test_stream_endpoint_returns_streaming_response(monkeypatch):
@@ -133,10 +149,10 @@ def test_stream_endpoint_returns_streaming_response(monkeypatch):
         assert np.isclose(interval, 0.1, rtol=1e-09, atol=1e-09)
         yield "data: dummy\\n\\n"
 
-    monkeypatch.setattr(main, "_curve_event_stream", _dummy_stream)
+    monkeypatch.setattr(main, "sse_gen", _dummy_stream)
     client = TestClient(main.app)
 
-    with client.stream("GET", "/curves/stream", params={"interval": 0.1}) as response:
+    with client.stream("GET", "/baskets/stream", params={"interval": 0.1}) as response:
         assert response.status_code == 200
         iterator = response.iter_text()
         assert next(iterator) == "data: dummy\n\n"

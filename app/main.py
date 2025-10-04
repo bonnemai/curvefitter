@@ -17,22 +17,22 @@ from mangum import Mangum
 
 _TEMPLATE_ROOT = Path(__file__).resolve().parent / "templates"
 _INDEX_TEMPLATE = (_TEMPLATE_ROOT / "index.html").read_text(encoding="utf-8")
-
+allow_origins = [o.strip() for o in os.getenv("CORS_ALLOW_ORIGINS", "*").split(",") if o.strip()]
 app = FastAPI(
     title="Emerging Market Swap Curve Fitter",
     description=(
         "Streams synthetic emerging market swap curves and their polynomial fits "
         "as server-sent events."
     ),
-    version="0.1.0",
+    version="0.0.0",
 )
-allow_origins = os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],   
 )
 handler = Mangum(app)
 
@@ -125,8 +125,8 @@ def _build_curve_snapshot() -> dict[str, object]:
     }
 
 
-async def _curve_event_stream(interval: float) -> AsyncIterator[str]:
-    """Yield swap curve snapshots as SSE data frames."""
+async def sse_gen(interval: float) -> AsyncIterator[str]:
+    """Yield swap curve snapshots as SSE frames."""
     while True:
         payload = json.dumps(_build_curve_snapshot())
         yield f"data: {payload}\n\n"
@@ -138,8 +138,14 @@ async def stream_swap_curves(interval: float = 1.0) -> StreamingResponse:
     """Stream synthetic emerging market swap curves via SSE."""
     if interval <= 0:
         raise HTTPException(status_code=400, detail="interval must be positive")
+    headers = {
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+    }
     return StreamingResponse(
-        _curve_event_stream(interval), media_type="text/event-stream"
+        sse_gen(interval),
+        media_type="text/event-stream",
+        headers=headers,
     )
 
 
