@@ -25,8 +25,10 @@ RUN coverage run -m pytest \
 
 FROM public.ecr.aws/lambda/python:3.11
 
+ARG BUILD_TIME
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    BUILD_TIME=${BUILD_TIME}
 
 WORKDIR /var/task
 
@@ -40,6 +42,8 @@ COPY entrypoint.sh ./
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir .
+
+RUN echo "${BUILD_TIME:-unknown}" > /var/task/.build_time
 
 RUN chmod +x entrypoint.sh
 

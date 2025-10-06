@@ -17,6 +17,12 @@ from mangum import Mangum
 
 _TEMPLATE_ROOT = Path(__file__).resolve().parent / "templates"
 _INDEX_TEMPLATE = (_TEMPLATE_ROOT / "index.html").read_text(encoding="utf-8")
+_BUILD_TIME_FILE = Path("/var/task/.build_time")
+_BUILD_TIME = (
+    _BUILD_TIME_FILE.read_text(encoding="utf-8").strip()
+    if _BUILD_TIME_FILE.exists()
+    else os.getenv("BUILD_TIME", "unknown")
+)
 allow_origins = [o.strip() for o in os.getenv("CORS_ALLOW_ORIGINS", "*").split(",") if o.strip()]
 app = FastAPI(
     title="Emerging Market Swap Curve Fitter",
@@ -164,5 +170,7 @@ async def health_check() -> dict[str, str]:
 @app.get("/", response_class=HTMLResponse)
 async def root() -> HTMLResponse:
     """Render the landing page from a static HTML template."""
-    html = _INDEX_TEMPLATE.replace("{{version}}", app.version)
+    html = _INDEX_TEMPLATE.replace("{{version}}", app.version).replace(
+        "{{build_time}}", _BUILD_TIME
+    )
     return HTMLResponse(content=html)
