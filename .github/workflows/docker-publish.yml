@@ -122,6 +122,12 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
           sbom: false
+
+      - name: Update Lambda function
+        run: |
+          aws lambda update-function-code \
+            --function-name lambda-curve-fitter-function \
+            --image-uri ${{ env.ECR_IMAGE }}:latest
   sonarqube:
     name: SonarQube
     environment: prd
