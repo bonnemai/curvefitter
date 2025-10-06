@@ -133,7 +133,6 @@ async def sse_gen(interval: float) -> AsyncIterator[str]:
         await asyncio.sleep(interval)
 
 
-@app.get("/baskets/stream")
 @app.get("/curves/stream")
 async def stream_swap_curves(interval: float = 1.0) -> StreamingResponse:
     """Stream synthetic emerging market swap curves via SSE."""
@@ -148,6 +147,12 @@ async def stream_swap_curves(interval: float = 1.0) -> StreamingResponse:
         media_type="text/event-stream",
         headers=headers,
     )
+
+
+@app.get("/curves")
+async def get_curve_snapshot() -> dict[str, object]:
+    """Return a single curve snapshot with 1-2 mutated points."""
+    return _build_curve_snapshot()
 
 
 @app.get("/health")
