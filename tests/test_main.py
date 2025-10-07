@@ -123,7 +123,7 @@ async def test_sse_gen_yields_json(monkeypatch):
 
 def test_stream_endpoint_rejects_non_positive_interval():
     client = TestClient(main.app)
-    response = client.get("/baskets/stream", params={"interval": 0})
+    response = client.get("/curves/stream", params={"interval": 0})
     assert response.status_code == 400
 
 
